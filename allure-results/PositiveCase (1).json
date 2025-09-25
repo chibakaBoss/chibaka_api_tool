@@ -1,0 +1,19 @@
+{
+  "uuid": "b180dd64-ab6b-4a84-8fe6-b25f7477e092",
+  "name": "PositiveCase",
+  "status": "passed",
+  "statusDetails": {},
+  "stage": "finished",
+  "steps": [],
+  "attachments": [],
+  "parameters": [
+    {
+      "name": "url",
+      "value": "https://uat-auth.payon.mn/realms/backoffice/protocol/openid-connect/token"
+    },
+    {
+      "name": "method",
+      "value": "POST"
+    }
+  ]
+}
