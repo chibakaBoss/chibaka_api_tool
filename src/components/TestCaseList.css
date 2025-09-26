@@ -1,0 +1,166 @@
+.test-case-list {
+  border: 1px solid #e3e8ef;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 1.5rem;
+  display: grid;
+  gap: 1.25rem;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+}
+
+.test-case-list__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.test-case-list__last-run {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  margin-top: 0.25rem;
+}
+
+.test-case-list__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.test-case-list__count {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.test-case-list__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.test-case-list__item {
+  border: 1px solid #dbe2ef;
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 0.9rem 1rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.test-case-list__meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+}
+
+.test-case-list__name {
+  font-weight: 600;
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.test-case-list__url {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.8rem;
+  color: #1d4ed8;
+  word-break: break-all;
+}
+
+.test-case-list__status {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.test-case-list__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.test-case-list__badge--success {
+  background: rgba(16, 185, 129, 0.15);
+  color: #047857;
+}
+
+.test-case-list__badge--error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #b91c1c;
+}
+
+.test-case-list__badge--pending {
+  background: rgba(148, 163, 184, 0.2);
+  color: #475569;
+}
+
+.test-case-list__status-meta {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.test-case-list__error {
+  font-size: 0.75rem;
+  color: #dc2626;
+}
+
+.test-case-list__warning {
+  font-size: 0.75rem;
+  color: #b45309;
+}
+
+.test-case-list__empty {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  padding: 2rem 1rem;
+  border: 1px dashed #cbd5f5;
+  border-radius: 12px;
+  background: rgba(226, 232, 240, 0.3);
+}
+
+.test-case-list__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.test-case-list__run {
+  min-width: 150px;
+}
+
+.test-case-list__open-report {
+  min-width: 150px;
+}
+
+.test-case-list__notice {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 10px;
+  background: rgba(251, 191, 36, 0.18);
+  color: #92400e;
+  font-size: 0.8rem;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+@media (max-width: 720px) {
+  .test-case-list {
+    padding: 1.25rem;
+  }
+}

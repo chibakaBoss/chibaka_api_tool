@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 
+import "./RequestForm.css";
+
 export default function RequestForm({ onSaveTestCase }) {
   const [method, setMethod] = useState("GET");
   const [url, setUrl] = useState("");
@@ -34,7 +36,7 @@ export default function RequestForm({ onSaveTestCase }) {
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState(null);
   const [formErrors, setFormErrors] = useState({});
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState(null);
 
   const clearError = field => {
     setFormErrors(prev => {
@@ -73,7 +75,7 @@ export default function RequestForm({ onSaveTestCase }) {
       nextErrors.caseName = "Case name is required.";
     }
 
-    setNotice("");
+    setNotice(null);
     setFormErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -179,7 +181,11 @@ export default function RequestForm({ onSaveTestCase }) {
     if (!validateRequest()) return;
 
     const { body, warning, isFormData } = buildBody();
-    setNotice(warning || "");
+    if (warning) {
+      setNotice({ message: warning, tone: "warning" });
+    } else {
+      setNotice(null);
+    }
     setLoading(true);
     setResponse(null);
     const start = Date.now();
@@ -230,6 +236,7 @@ export default function RequestForm({ onSaveTestCase }) {
         data: err.response?.data,
         error: err.message
       });
+      setNotice({ message: err.message, tone: "error" });
     } finally { setLoading(false); }
   };
 
@@ -240,7 +247,8 @@ export default function RequestForm({ onSaveTestCase }) {
     if (!validateRequest({ requireCaseName: true })) return;
 
     const bodyForStorage = buildBody("storage");
-    let feedbackMessage = bodyForStorage.warning ? `${bodyForStorage.warning} Test case saved.` : "Test case saved.";
+    let noticeTone = bodyForStorage.warning ? "warning" : "success";
+    let noticeMessage = bodyForStorage.warning ? `${bodyForStorage.warning} Test case saved.` : "Test case saved.";
 
     const caseId = uuidv4();
     const expectedNumber = Number(expectedStatus);
@@ -285,144 +293,163 @@ export default function RequestForm({ onSaveTestCase }) {
     a.click();
     URL.revokeObjectURL(downloadUrl);
 
-    try {
-      const saved = JSON.parse(localStorage.getItem("testCases") || "[]");
-      saved.push(testCase);
-      localStorage.setItem("testCases", JSON.stringify(saved));
-    } catch (storageError) {
-      console.error(storageError);
-      feedbackMessage = `Failed to persist test case locally: ${storageError.message}`;
-    }
-
     if (typeof onSaveTestCase === "function") {
       onSaveTestCase(testCase);
     }
 
-    setNotice(feedbackMessage);
+    setNotice({ message: noticeMessage, tone: noticeTone });
     setCaseName("");
     setExpectedStatus("200");
     setMaxResponseTime("5");
   };
 
   return (
-    <form onSubmit={handleSave} style={{ border: "1px solid #ddd", padding: 12, borderRadius: 6 }}>
-      {/* Method + URL */}
-      <div style={{ display:"flex", gap:8, marginBottom:8 }}>
-        <select value={method} onChange={e=>setMethod(e.target.value)}>
-          <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option>
-        </select>
-        <input
-          style={{flex:1}}
-          value={url}
-          onChange={e=>{ setUrl(e.target.value); clearError("url"); }}
-          placeholder="https://api.example.com/path"
-        />
-      </div>
-      {formErrors.url && <div style={{color:"#d33", fontSize:12, marginBottom:8}}>{formErrors.url}</div>}
-
-      {/* Headers */}
-      <div style={{marginBottom:8}}>
-        <div style={{fontWeight:600}}>Headers</div>
-        {headers.map((h,i)=>(
-          <div key={i} style={{display:"flex",gap:6,marginBottom:4}}>
-            <input placeholder="Key" value={h.key} onChange={e=>handleHeaderChange(i,"key",e.target.value)} />
-            <input placeholder="Value" value={h.value} onChange={e=>handleHeaderChange(i,"value",e.target.value)} />
-            <button type="button" onClick={()=>removeHeader(i)}>✖</button>
-          </div>
-        ))}
-        <button type="button" onClick={addHeader}>+ Add Header</button>
-      </div>
-
-      {/* Authorization */}
-      <div style={{marginBottom:8}}>
-        <div style={{fontWeight:600}}>Authorization</div>
-        <select value={authType} onChange={e=>setAuthType(e.target.value)}>
-          <option value="None">None</option>
-          <option value="Bearer">Bearer Token</option>
-          <option value="Basic">Basic Auth</option>
-          <option value="ApiKey">API Key</option>
-        </select>
-
-        {authType === "Bearer" && <input type="text" placeholder="Token" value={auth.token} onChange={e=>setAuth(prev => ({ ...prev, token: e.target.value }))} />}
-        {authType === "Basic" && <>
-          <input type="text" placeholder="Username" value={auth.username} onChange={e=>setAuth(prev => ({ ...prev, username: e.target.value }))} />
-          <input type="password" placeholder="Password" value={auth.password} onChange={e=>setAuth(prev => ({ ...prev, password: e.target.value }))} />
-        </>}
-        {authType === "ApiKey" && <>
-          <input type="text" placeholder="API Key" value={auth.apiKey} onChange={e=>setAuth(prev => ({ ...prev, apiKey: e.target.value }))} />
-          <select value={auth.apiKeyLocation} onChange={e=>setAuth(prev => {
-            const nextLocation = e.target.value;
-            const fallback = nextLocation === "header" ? "x-api-key" : "apiKey";
-            const currentName = prev.apiKeyName?.trim();
-            const shouldReset = !currentName ||
-              (nextLocation === "query" && currentName.toLowerCase() === "x-api-key") ||
-              (nextLocation === "header" && currentName.toLowerCase() === "apikey");
-            return {
-              ...prev,
-              apiKeyLocation: nextLocation,
-              apiKeyName: shouldReset ? fallback : currentName
-            };
-          })}>
-            <option value="header">In Header</option>
-            <option value="query">In Query Params</option>
+    <form className="request-form" onSubmit={handleSave}>
+      <div className="request-form__section">
+        <div className="request-form__section-title">Request</div>
+        <div className="request-form__method-row">
+          <select className="field" value={method} onChange={e=>setMethod(e.target.value)}>
+            <option>GET</option>
+            <option>POST</option>
+            <option>PUT</option>
+            <option>PATCH</option>
+            <option>DELETE</option>
           </select>
           <input
-            type="text"
-            placeholder={auth.apiKeyLocation === "header" ? "Header name (e.g. x-api-key)" : "Query param name (e.g. apiKey)"}
-            value={auth.apiKeyName}
-            onChange={e=>setAuth(prev => ({ ...prev, apiKeyName: e.target.value }))}
+            className="field"
+            value={url}
+            onChange={e=>{ setUrl(e.target.value); clearError("url"); }}
+            placeholder="https://api.example.com/path"
           />
-        </>}
+        </div>
+        {formErrors.url && <div className="request-form__errors">{formErrors.url}</div>}
       </div>
 
-      {/* Body */}
-      {method !== "GET" && <div style={{marginBottom:8}}>
-        <div style={{fontWeight:600}}>Body</div>
-        <select value={bodyType} onChange={e=>setBodyType(e.target.value)}>
-          <option value="raw">Raw JSON</option>
-          <option value="form-data">Form Data</option>
-        </select>
-
-        {bodyType === "raw" && <textarea rows={6} style={{width:"100%"}} value={rawBody} onChange={e=>setRawBody(e.target.value)} />}
-        {bodyType === "form-data" && <div>
-          {formData.map((f,i)=>(
-            <div key={i} style={{display:"flex",gap:6,marginBottom:4}}>
-              <input placeholder="Key" value={f.key} onChange={e=>handleFormDataChange(i,"key",e.target.value)} />
-              <input placeholder="Value" value={f.value} onChange={e=>handleFormDataChange(i,"value",e.target.value)} />
-              <button type="button" onClick={()=>removeFormDataField(i)}>✖</button>
+      <div className="request-form__section">
+        <div className="request-form__section-title">Headers</div>
+        <div className="request-form__grid">
+          {headers.map((h,i)=>(
+            <div key={i} className="request-form__form-row">
+              <input className="field" placeholder="Key" value={h.key} onChange={e=>handleHeaderChange(i,"key",e.target.value)} />
+              <input className="field" placeholder="Value" value={h.value} onChange={e=>handleHeaderChange(i,"value",e.target.value)} />
+              <button type="button" className="request-form__icon-button" onClick={()=>removeHeader(i)}>✖</button>
             </div>
           ))}
-          <button type="button" onClick={addFormDataField}>+ Add Field</button>
-        </div>}
+          <button type="button" className="btn btn--ghost request-form__add-btn" onClick={addHeader}>+ Add Header</button>
+        </div>
+      </div>
+
+      <div className="request-form__section">
+        <div className="request-form__section-title">Authorization</div>
+        <div className="request-form__grid">
+          <select className="field" value={authType} onChange={e=>setAuthType(e.target.value)}>
+            <option value="None">None</option>
+            <option value="Bearer">Bearer Token</option>
+            <option value="Basic">Basic Auth</option>
+            <option value="ApiKey">API Key</option>
+          </select>
+
+          {authType === "Bearer" && <input className="field" type="text" placeholder="Token" value={auth.token} onChange={e=>setAuth(prev => ({ ...prev, token: e.target.value }))} />}
+          {authType === "Basic" && <>
+            <input className="field" type="text" placeholder="Username" value={auth.username} onChange={e=>setAuth(prev => ({ ...prev, username: e.target.value }))} />
+            <input className="field" type="password" placeholder="Password" value={auth.password} onChange={e=>setAuth(prev => ({ ...prev, password: e.target.value }))} />
+          </>}
+          {authType === "ApiKey" && <>
+            <input className="field" type="text" placeholder="API Key" value={auth.apiKey} onChange={e=>setAuth(prev => ({ ...prev, apiKey: e.target.value }))} />
+            <div className="request-form__inline-grid">
+              <select className="field" value={auth.apiKeyLocation} onChange={e=>setAuth(prev => {
+                const nextLocation = e.target.value;
+                const fallback = nextLocation === "header" ? "x-api-key" : "apiKey";
+                const currentName = prev.apiKeyName?.trim();
+                const shouldReset = !currentName ||
+                  (nextLocation === "query" && currentName.toLowerCase() === "x-api-key") ||
+                  (nextLocation === "header" && currentName.toLowerCase() === "apikey");
+                return {
+                  ...prev,
+                  apiKeyLocation: nextLocation,
+                  apiKeyName: shouldReset ? fallback : currentName
+                };
+              })}>
+                <option value="header">In Header</option>
+                <option value="query">In Query Params</option>
+              </select>
+              <input
+                className="field"
+                type="text"
+                placeholder={auth.apiKeyLocation === "header" ? "Header name (e.g. x-api-key)" : "Query param name (e.g. apiKey)"}
+                value={auth.apiKeyName}
+                onChange={e=>setAuth(prev => ({ ...prev, apiKeyName: e.target.value }))}
+              />
+            </div>
+          </>}
+        </div>
+      </div>
+
+      {method !== "GET" && <div className="request-form__section">
+        <div className="request-form__section-title">Body</div>
+        <div className="request-form__grid">
+          <select className="field" value={bodyType} onChange={e=>setBodyType(e.target.value)}>
+            <option value="raw">Raw JSON</option>
+            <option value="form-data">Form Data</option>
+          </select>
+
+          {bodyType === "raw" && <textarea className="field request-form__textarea" value={rawBody} onChange={e=>setRawBody(e.target.value)} />}
+          {bodyType === "form-data" && <div className="request-form__grid">
+            {formData.map((f,i)=>(
+              <div key={i} className="request-form__form-row">
+                <input className="field" placeholder="Key" value={f.key} onChange={e=>handleFormDataChange(i,"key",e.target.value)} />
+                <input className="field" placeholder="Value" value={f.value} onChange={e=>handleFormDataChange(i,"value",e.target.value)} />
+                <button type="button" className="request-form__icon-button" onClick={()=>removeFormDataField(i)}>✖</button>
+              </div>
+            ))}
+            <button type="button" className="btn btn--ghost request-form__add-btn" onClick={addFormDataField}>+ Add Field</button>
+          </div>}
+        </div>
       </div>}
 
-      {/* Send / Save */}
-      <div style={{display:"flex",gap:8,marginBottom:8}}>
-        <button type="button" onClick={handleSend} disabled={loading}>{loading ? "Sending..." : "Send"}</button>
-      </div>
-      {notice && <div style={{color:"#b26b00", fontSize:12, marginBottom:8}}>{notice}</div>}
-
-      <div style={{borderTop:"1px solid #eee", paddingTop:8, display:"grid", gap:6}}>
-        <input placeholder="Case Name" value={caseName} onChange={e=>{ setCaseName(e.target.value); clearError("caseName"); }} />
-        {formErrors.caseName && <div style={{color:"#d33", fontSize:12}}>{formErrors.caseName}</div>}
-        <input type="text" placeholder="Expected Status" value={expectedStatus} onChange={e=>handleExpectedStatusInput(e.target.value)} />
-        {formErrors.expectedStatus && <div style={{color:"#d33", fontSize:12}}>{formErrors.expectedStatus}</div>}
-        <input type="text" placeholder="Max Response Time sec" value={maxResponseTime} onChange={e=>handleMaxResponseTimeInput(e.target.value)} />
-        {formErrors.maxResponseTime && <div style={{color:"#d33", fontSize:12}}>{formErrors.maxResponseTime}</div>}
-        <button type="submit">Save</button>
+      <div className="request-form__section">
+        <div className="request-form__actions">
+          <button type="button" className="btn btn--primary" onClick={handleSend} disabled={loading}>
+            {loading ? "Sending..." : "Send"}
+          </button>
+        </div>
+        {notice && (
+          <div className={`request-form__feedback request-form__feedback--${notice.tone}`}>
+            {notice.message}
+          </div>
+        )}
       </div>
 
-      {/* Response */}
-      <div style={{marginTop:12}}>
-        <div style={{fontWeight:600}}>Response</div>
-        {response ? <pre style={{whiteSpace:"pre-wrap", fontFamily:"monospace", fontSize:12}}>
-          {response.ok ? "✅ Success\n" : "❌ Failed\n"}
-          {response.status && `Status: ${response.status} ${response.statusText}\n`}
-          {response.timeMs && `Time: ${response.timeMs} ms\n`}
-          {response.headers && `Headers: ${JSON.stringify(response.headers,null,2)}\n`}
-          {response.data && `Body: ${JSON.stringify(response.data,null,2)}\n`}
-          {response.error && `Error: ${response.error}`}
-        </pre> : <div style={{color:"#666"}}>No response yet</div>}
+      <div className="request-form__section request-form__save">
+        <input className="field" placeholder="Case Name" value={caseName} onChange={e=>{ setCaseName(e.target.value); clearError("caseName"); }} />
+        {formErrors.caseName && <div className="request-form__errors">{formErrors.caseName}</div>}
+        <input className="field" type="text" placeholder="Expected Status" value={expectedStatus} onChange={e=>handleExpectedStatusInput(e.target.value)} />
+        {formErrors.expectedStatus && <div className="request-form__errors">{formErrors.expectedStatus}</div>}
+        <input className="field" type="text" placeholder="Max Response Time sec" value={maxResponseTime} onChange={e=>handleMaxResponseTimeInput(e.target.value)} />
+        {formErrors.maxResponseTime && <div className="request-form__errors">{formErrors.maxResponseTime}</div>}
+        <button className="btn btn--primary" type="submit">Save</button>
+      </div>
+
+      <div className="request-form__section request-form__response">
+        <div className="request-form__section-title">Response</div>
+        {response ? (
+          <>
+            <div className="request-form__response-summary">
+              <span className={`badge ${response.ok ? "badge--success" : "badge--error"}`}>
+                {response.ok ? "Success" : "Failed"}
+              </span>
+              {response.status && <span>Status: {response.status} {response.statusText}</span>}
+              {response.timeMs && <span>Time: {response.timeMs} ms</span>}
+            </div>
+            <pre className="request-form__response-body">
+              {response.headers && `Headers: ${JSON.stringify(response.headers, null, 2)}\n\n`}
+              {response.data && `Body: ${JSON.stringify(response.data, null, 2)}\n\n`}
+              {response.error && `Error: ${response.error}`}
+            </pre>
+          </>
+        ) : (
+          <div className="request-form__empty">No response yet</div>
+        )}
       </div>
     </form>
   );
